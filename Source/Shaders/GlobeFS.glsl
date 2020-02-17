@@ -84,6 +84,10 @@ uniform vec3 u_hsbShift; // Hue, saturation, brightness
 uniform vec4 u_fillHighlightColor;
 #endif
 
+#ifdef ALPHA
+uniform float u_alpha;
+#endif
+
 varying vec3 v_positionMC;
 varying vec3 v_positionEC;
 varying vec3 v_textureCoordinates;

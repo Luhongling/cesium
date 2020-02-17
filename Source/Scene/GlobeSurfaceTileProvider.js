@@ -38,6 +38,7 @@ import VertexArray from '../Renderer/VertexArray.js';
 import BlendingState from './BlendingState.js';
 import ClippingPlaneCollection from './ClippingPlaneCollection.js';
 import DepthFunction from './DepthFunction.js';
+import GlobeTranslucency from './GlobeTranslucency.js';
 import GlobeSurfaceTile from './GlobeSurfaceTile.js';
 import ImageryLayer from './ImageryLayer.js';
 import ImageryState from './ImageryState.js';
@@ -105,6 +106,7 @@ import TileSelectionResult from './TileSelectionResult.js';
 
         this.showSkirts = true;
         this.backFaceCulling = true;
+        this.alpha = 1.0;
 
         this._quadtree = undefined;
         this._terrainProvider = options.terrainProvider;
@@ -1296,6 +1298,9 @@ import TileSelectionResult from './TileSelectionResult.js';
             u_colorsToAlpha : function() {
                 return this.properties.colorsToAlpha;
             },
+            u_alpha : function() {
+                return this.alpha;
+            },
 
             // make a separate object so that changes to the properties are seen on
             // derived commands that combine another uniform map with this one.
@@ -1339,7 +1344,9 @@ import TileSelectionResult from './TileSelectionResult.js';
                 clippingPlanesEdgeColor : Color.clone(Color.WHITE),
                 clippingPlanesEdgeWidth : 0.0,
 
-                localizedCartographicLimitRectangle : new Cartesian4()
+                localizedCartographicLimitRectangle : new Cartesian4(),
+
+                alpha: 1.0
             }
         };
 
@@ -1410,6 +1417,10 @@ import TileSelectionResult from './TileSelectionResult.js';
             attributes : vertexArray._attributes,
             indexBuffer : wireframeIndexBuffer
         });
+    }
+
+    function globeTranslucencyEnabled(tileProvider, frameState) {
+        return tileProvider.alpha < 1.0 && GlobeTranslucency.isSupported(frameState.context);
     }
 
     var getDebugOrientedBoundingBox;
@@ -1674,7 +1685,7 @@ import TileSelectionResult from './TileSelectionResult.js';
         var imageryIndex = 0;
         var imageryLen = tileImageryCollection.length;
 
-        var showSkirts = tileProvider.showSkirts && !cameraUnderground;
+        var showSkirts = tileProvider.showSkirts && !cameraUnderground && !globeTranslucencyEnabled(tileProvider, frameState);
         var backFaceCulling = tileProvider.backFaceCulling && !cameraUnderground;
         var firstPassRenderState = backFaceCulling ? tileProvider._renderState : tileProvider._disableCullingRenderState;
         var otherPassesRenderState = backFaceCulling ? tileProvider._blendRenderState : tileProvider._disableCullingBlendRenderState;
@@ -1964,7 +1975,14 @@ import TileSelectionResult from './TileSelectionResult.js';
             }
 
             command.dirty = true;
-            frameState.commandList.push(command);
+
+            if (globeTranslucencyEnabled(tileProvider, frameState)) {
+                GlobeTranslucency.updateDerivedCommand(command);
+                frameState.commandList.push(command.globeTranslucency.backFaceCommand);
+                frameState.commandList.push(command.globeTranslucency.frontFaceCommand);
+            } else {
+                frameState.commandList.push(command);
+            }
 
             renderState = otherPassesRenderState;
             initialColor = otherPassesInitialColor;

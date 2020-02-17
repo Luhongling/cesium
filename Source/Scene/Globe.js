@@ -287,6 +287,11 @@ import ShadowMode from './ShadowMode.js';
          */
         this.backFaceCulling = true;
 
+        /**
+         * TODO
+         */
+        this.alpha = 1.0;
+
         this._oceanNormalMap = undefined;
         this._zoomedOutOceanSpecularIntensity = undefined;
     }
@@ -788,6 +793,7 @@ import ShadowMode from './ShadowMode.js';
             tileProvider.fillHighlightColor = this.fillHighlightColor;
             tileProvider.showSkirts = this.showSkirts;
             tileProvider.backFaceCulling = this.backFaceCulling;
+            tileProvider.alpha = this.alpha;
             surface.beginFrame(frameState);
         }
     };
